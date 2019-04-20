@@ -19,3 +19,4 @@ excerpt_separator: "\n\n\n"  # indicate the end of the excerpt by two blank line
 markdown: kramdown
 plugins:
   - jekyll-feed
+  - jekyll-paginate
