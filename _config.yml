@@ -1,10 +1,9 @@
 title: Zonda Github io
 author: Zonda Yang
 description: Zonda Github io
-lang: en
 
 # Page settings
-permalink: /:title/          # see https://jekyllrb.com/docs/permalinks/
+permalink: /:year/:title/          # see https://jekyllrb.com/docs/permalinks/
 date_format: "%B %d, %Y"     # see http://shopify.github.io/liquid/filters/date/
 hide_title: false            # remove site heading in the header
 post_footer: true            # show previous and next links at the end of each post
@@ -12,8 +11,11 @@ post_footer: true            # show previous and next links at the end of each p
 icons:
   github: "https://github.com/zondaTW"
 
+show_excerpts: false         # preview articles on the home page
+paginate: 8                  # number of articles per page
+excerpt_separator: "\n\n\n"  # indicate the end of the excerpt by two blank lines
+
 # Build settings
 markdown: kramdown
-theme: minima
 plugins:
   - jekyll-feed

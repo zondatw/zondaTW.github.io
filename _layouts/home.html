@@ -3,7 +3,7 @@ layout: default
 ---
 {% if site.show_excerpts and page.name == "index.html" %}
 {% for page in paginator.posts %}
-<article>
+<article class="dark">
   <header>
     {%- assign date_format = site.date_format | default: "%B %d, %Y" -%}
     <h1><a href="{{ page.url | relative_url }}">{{ page.title }}</a></h1>
@@ -16,14 +16,14 @@ layout: default
 </article>
 {% endfor %}
 {% if paginator.total_pages > 1 %}
-<footer>
+<footer class="dark">
   <a {% if paginator.previous_page %}class="gray" href="{{ paginator.previous_page_path | relative_url }}"{% else %}class="disabled"{% endif %}>« newer posts</a>
   <span>page {{ paginator.page }} of {{ paginator.total_pages }}</span>
   <a {% if paginator.next_page %}class="gray" href="{{ paginator.next_page_path | relative_url }}"{% else %}class="disabled"{% endif %}>older posts »</a>
 </footer>
 {% endif %}
 {% else %}
-<article class="archive">
+<article class="dark archive">
   {{ content }}
   <header><h1>Posts</h1></header>
   {% for post in site.posts %}
