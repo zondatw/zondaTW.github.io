@@ -25,12 +25,12 @@ layout: default
 {% else %}
 <article class="dark archive">
   {{ content }}
-  <header><h1>Posts</h1></header>
+  <header><h3>Posts</h3></header>
   {% for post in site.posts %}
   {%- assign date_format = site.date_format | default: "%B %d, %Y" -%}
   <div>
     <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: date_format }}</time>
-    <h5><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h5>
+    <h6><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h6>
   </div>
   {% endfor %}
 </article>

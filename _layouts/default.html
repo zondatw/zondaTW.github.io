@@ -8,39 +8,24 @@
 <meta name="author" content="{{ page.author | default: site.author | escape}}">
 <meta name="generator" content="Jekyll v{{ jekyll.version }}">
 <link rel="canonical" href="{{ page.url | absolute_url }}">
-<script src="{{ "/assets/bootstrap/js/jquery-3.3.1.slim.min.js" | relative_url }}"></script>
-<script src="{{ "/assets/bootstrap/js/popper.min.js" | relative_url }}"></script>
-<script src="{{ "/assets/bootstrap/js/bootstrap.min.js" | relative_url }}"></script>
-<script src="{{ "/assets/font-awesome/js/all.min.js" | relative_url }}"></script>
-<link rel="stylesheet" href="{{ "/assets/bootstrap/css/bootstrap.min.css" | relative_url }}">
-<link rel="stylesheet" href="{{ "/assets/font-awesome/css/all.min.css" | relative_url }}">
-<link rel="stylesheet" href="{{ "/assets/css/index.css" | relative_url }}">
-<link rel="stylesheet" href="{{ site.style | default: "theme" | prepend: "/assets/css/" | append: ".css" | relative_url }}">
-{% if site.plugins contains "jekyll-feed" %}<link rel="alternate" type="application/atom+xml" href="{{ "/feed.xml" | relative_url }}" title="{{ site.title }}" />{% endif %}
+{% include import.html %}
 
 
-<header class="dark">
-  {% unless site.hide_title %}
-    <h1><a href="{{ "/" | relative_url }}">{{ site.title | escape }}</a></h1>
-  {% endunless %}
-  {% if site.navigation %}
-    <nav>
-    {% for path in site.navigation %}
-      {% if path.first %}
-        <a href="{{ path.first[1] }}">{{ path.first[0] }}</a>
-      {% else %}
-        {% assign node = site.pages | where: "name", path | first %}<a href="{{ node.url | relative_url }}">{{ node.title }}</a>
+<header id="defaultHeader" class="dark">
+  <nav class="navbar navbar-collapse">
+    <div>
+      <div class="navbar-header">
+        <h1><a href="{{ "/" | relative_url }}">{{ site.title | escape }}</a></h1>
+      </div>
+      {% if site.icons %}
+      <span class="nav navbar-nav navbar-right">
+        {% for link in site.icons %}
+          <a class="icon" href="{{ link[1] }}"><svg><use xlink:href="{{ "/assets/fontawesome/icons.svg" | relative_url }}#{{ link[0] }}"></use></svg></a>
+        {% endfor %}
+      </span>
       {% endif %}
-    {% endfor %}
-    </nav>
-  {% endif %}
-  {% if site.icons %}
-    <nav>
-    {% for link in site.icons %}
-      <a class="icon" href="{{ link[1] }}"><svg><use xlink:href="{{ "/assets/fontawesome/icons.svg" | relative_url }}#{{ link[0] }}"></use></svg></a>
-    {% endfor %}
-    </nav>
-  {% endif %}
+    </div>
+  </nav>
 </header>
 
 {{ content }}

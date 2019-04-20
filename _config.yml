@@ -5,7 +5,6 @@ description: Zonda Github io
 # Page settings
 permalink: /:year/:title/          # see https://jekyllrb.com/docs/permalinks/
 date_format: "%B %d, %Y"     # see http://shopify.github.io/liquid/filters/date/
-hide_title: false            # remove site heading in the header
 post_footer: true            # show previous and next links at the end of each post
 
 icons:

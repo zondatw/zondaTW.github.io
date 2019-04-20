@@ -1,0 +1,9 @@
+<script src="{{ "/assets/bootstrap/js/jquery-3.3.1.slim.min.js" | relative_url }}"></script>
+<script src="{{ "/assets/bootstrap/js/popper.min.js" | relative_url }}"></script>
+<script src="{{ "/assets/bootstrap/js/bootstrap.min.js" | relative_url }}"></script>
+<script src="{{ "/assets/font-awesome/js/all.min.js" | relative_url }}"></script>
+<link rel="stylesheet" href="{{ "/assets/bootstrap/css/bootstrap.min.css" | relative_url }}">
+<link rel="stylesheet" href="{{ "/assets/font-awesome/css/all.min.css" | relative_url }}">
+<link rel="stylesheet" href="{{ "/assets/css/index.css" | relative_url }}">
+<link rel="stylesheet" href="{{ site.style | default: "theme" | prepend: "/assets/css/" | append: ".css" | relative_url }}">
+{% if site.plugins contains "jekyll-feed" %}<link rel="alternate" type="application/atom+xml" href="{{ "/feed.xml" | relative_url }}" title="{{ site.title }}" />{% endif %}
