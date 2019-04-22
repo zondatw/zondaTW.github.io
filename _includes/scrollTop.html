@@ -1,0 +1,26 @@
+<button id="scrollTopBtn" onclick="ScrollTopBtnFunc()" type="button" class="btn btn-outline-light">
+  <i class="fas fa-angle-double-up"></i>
+</button>
+<script type="text/javascript">
+var FourLeafCloverZCVar
+
+function ScrollTopBtnFunc() {
+  FourLeafCloverZCVar = setInterval(ScrollTopBtnFuncBy, 10)
+}
+
+function ScrollTopBtnFuncBy(eachHeight) {
+  if (document.documentElement && document.documentElement.scrollTop) {
+  if (document.documentElement.scrollTop <= 0) {
+    clearInterval(FourLeafCloverZCVar)
+  } else {
+    window.scrollBy(0, -30);
+  }
+  } else {
+  if (document.body.scrollTop <= 0) {
+    clearInterval(FourLeafCloverZCVar)
+  } else {
+    window.scrollBy(0, -30);
+  }
+  }
+}
+</script>
