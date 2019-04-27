@@ -262,4 +262,3 @@ except UcError as e:
 練習1就到這摟~~
 
 [Unicorn_Engine_tutorial]:http://eternal.red/2018/unicorn-engine-tutorial/  
-[test1_py]:https://www.unicorn-engine.org/docs/tutorial.html  
