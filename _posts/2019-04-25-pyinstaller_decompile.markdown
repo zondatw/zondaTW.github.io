@@ -49,7 +49,7 @@ Hello World!
 `python pyinstxtractor.py my_script.exe` 
 完成後會出現`my_script.exe_extracted`的資料夾，  
 在裡面找到跟執行檔名稱一樣的檔案，打開來看如下:  
-![](/assets/images/2020-04-25-pyinstaller_decompile/orig.png)  
+![](/assets/images/2019-04-25-pyinstaller_decompile/orig.png)  
 
 #### uncompyle
 將檔名改成`.pyc`  
@@ -85,7 +85,7 @@ ImportError: Unknown magic number 227 in my_script.pyc
 這表示前輟magic number不符合pyc規範  
 
 將magic number補回去(可參考其他被extract的pyc檔)  
-![](/assets/images/2020-04-25-pyinstaller_decompile/modify.png)
+![](/assets/images/2019-04-25-pyinstaller_decompile/modify.png)
 
 再執行一次，就成功喽~  
 ```
