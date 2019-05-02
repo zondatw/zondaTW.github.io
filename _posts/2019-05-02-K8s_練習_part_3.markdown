@@ -1,0 +1,225 @@
+---
+layout: post
+title:  "K8s 練習 - part 3"
+date:   2019-05-02 14:19:00 +0800
+categories: K8s
+---
+
+## 前言
+
+前面玩過Dockerfile後，接下來就來結合K8s來玩玩瞜~  
+
+## 前置作業
+
+`Dockerfile`  
+
+```docker
+# Use an official Python runtime as a parent image
+FROM python:2.7-slim
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
+
+# Make port 80 available to the world outside this container
+EXPOSE 80
+
+# Define environment variable
+ENV NAME World
+ENV TAG  v1
+
+# Run app.py when the container launches
+CMD ["python", "app.py"]
+```
+
+`requirements.txt`  
+
+```text
+Flask
+Redis
+```
+
+`app.py`  
+
+```python
+from flask import Flask
+from redis import Redis, RedisError
+import os
+import socket
+
+# Connect to Redis
+redis = Redis(host="redis", db=0, socket_connect_timeout=2, socket_timeout=2)
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    try:
+        visits = redis.incr("counter")
+    except RedisError:
+        visits = "<i>cannot connect to Redis, counter disabled</i>"
+
+    html = "<h3>Hello {name}!</h3>" \
+           "<b>Hostname:</b> {hostname}<br/>" \
+           "<b>Tag:</b> {tag}<br/>" \
+           "<b>Visits:</b> {visits}"
+    return html.format(name=os.getenv("NAME", "world"), name=os.getenv("TAG", "v0"), hostname=socket.gethostname(), visits=visits)
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=80)
+```
+
+建立2個Tag版本並把它傳上Docker Hub  
+我這邊範例是用v1, v2  
+
+```text
+$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+friendlyhello       v1                  481ef22c534e        40 minutes ago      131MB
+
+$ docker tag friendlyhello:v1 zondayang/flask_demo:v1
+
+$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
+friendlyhello          v1                  481ef22c534e        41 minutes ago      131MB
+zondayang/flask_demo   v1                  481ef22c534e        41 minutes ago      131MB
+
+$ docker push zondayang/flask_demo:v1
+```
+
+![](/assets/images/2019-05-02-K8s-exercise_part_3/docker_hub.PNG)  
+
+## K8s
+
+### run v1
+
+```text
+$ kubectl run flask-demo --image=docker.io/zondayang/flask_demo:v1 --port 80
+kubectl run --generator=deployment/apps.v1 is DEPRECATED and will be removed in a future version. Use kubectl run --generator=run-pod/v1 or kubectl create instead.
+deployment.apps/flask-demo created
+
+$ kubectl get pods
+NAME                              READY   STATUS    RESTARTS   AGE
+flask-demo-766b9f4bc8-5t7s6       1/1     Running   0          16s
+hello-minikube-56cdb79778-trxx9   1/1     Running   1          9h
+
+$ kubectl expose deployment/flask-demo --type=NodePort --port 80 
+service/flask-demo exposed
+
+$ kubectl get services
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+flask-demo       NodePort    10.109.241.127   <none>        80:30521/TCP     9s
+hello-minikube   NodePort    10.103.163.153   <none>        8080:30337/TCP   9h
+kubernetes       ClusterIP   10.96.0.1        <none>        443/TCP          20h
+
+$ minikube service flask-demo --url
+http://192.168.99.100:30521
+```
+
+![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v1.PNG)  
+
+### deployments
+
+觀看deployments的訊息，以及產生副本
+
+```text
+$ kubectl get deployments
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+flask-demo       1/1     1            1           8m25s
+hello-minikube   1/1     1            1           9h
+
+$ kubectl scale deployment/flask-demo --replicas=2
+deployment.extensions/flask-demo scaled
+
+$ kubectl get deployments
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+flask-demo       2/2     2            2           9m47s
+hello-minikube   1/1     1            1           9h
+```
+
+更新版本:  
+
+```text
+$ kubectl set image deployment/flask-demo flask-demo=docker.io/zondayang/flask_demo:v2
+```
+
+![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v2.PNG)  
+
+Undo:  
+
+```text
+$ kubectl rollout status deployment/flask-demo                          
+deployment "flask-demo" successfully rolled out
+
+
+$ kubectl rollout history deployment/flask-demo
+deployment.extensions/flask-demo 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+$ kubectl rollout undo deployment/flask-demo
+deployment.extensions/flask-demo rolled back
+
+$ kubectl rollout history deployment/flask-demo
+deployment.extensions/flask-demo 
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
+```
+
+![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v1_undo.PNG)  
+
+查看詳細訊息:  
+
+```text
+$ kubectl describe deployment/flask-demo
+Name:                   flask-demo
+Namespace:              default
+CreationTimestamp:      Thu, 02 May 2019 20:31:57 +0800
+Labels:                 run=flask-demo
+Annotations:            deployment.kubernetes.io/revision: 3
+Selector:               run=flask-demo
+Replicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  run=flask-demo
+  Containers:
+   flask-demo:
+    Image:        docker.io/zondayang/flask_demo:v1
+    Port:         80/TCP
+    Host Port:    0/TCP
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   flask-demo-766b9f4bc8 (2/2 replicas created)
+Events:
+  Type    Reason             Age                From                   Message
+  ----    ------             ----               ----                   -------
+  Normal  ScalingReplicaSet  20m                deployment-controller  Scaled up replica set flask-demo-94c5457c to 1
+  Normal  ScalingReplicaSet  19m                deployment-controller  Scaled down replica set flask-demo-766b9f4bc8 to 1
+  Normal  ScalingReplicaSet  19m                deployment-controller  Scaled up replica set flask-demo-94c5457c to 2
+  Normal  ScalingReplicaSet  19m                deployment-controller  Scaled down replica set flask-demo-766b9f4bc8 to 0
+  Normal  ScalingReplicaSet  14m (x2 over 25m)  deployment-controller  Scaled up replica set flask-demo-766b9f4bc8 to 1
+  Normal  ScalingReplicaSet  14m (x2 over 21m)  deployment-controller  Scaled up replica set flask-demo-766b9f4bc8 to 2
+  Normal  ScalingReplicaSet  14m                deployment-controller  Scaled down replica set flask-demo-94c5457c to 1
+  Normal  ScalingReplicaSet  14m                deployment-controller  Scaled down replica set flask-demo-94c5457c to 0
+
+```
+
+## Reference
+
+[Kubernete概念解析之Deployment](https://jimmysong.io/posts/kubernetes-concept-deployment/)  
