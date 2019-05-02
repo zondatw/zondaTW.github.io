@@ -121,7 +121,7 @@ $ minikube service flask-demo --url
 http://192.168.99.100:30521
 ```
 
-![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v1.PNG)  
+![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v1.png)  
 
 ### deployments
 
@@ -148,12 +148,12 @@ hello-minikube   1/1     1            1           9h
 $ kubectl set image deployment/flask-demo flask-demo=docker.io/zondayang/flask_demo:v2
 ```
 
-![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v2.PNG)  
+![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v2.png)  
 
 Undo:  
 
 ```text
-$ kubectl rollout status deployment/flask-demo                          
+$ kubectl rollout status deployment/flask-demo
 deployment "flask-demo" successfully rolled out
 
 
@@ -173,7 +173,7 @@ REVISION  CHANGE-CAUSE
 3         <none>
 ```
 
-![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v1_undo.PNG)  
+![](/assets/images/2019-05-02-K8s-exercise_part_3/flask_demo_v1_undo.png)  
 
 查看詳細訊息:  
 
