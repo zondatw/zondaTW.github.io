@@ -1,0 +1,184 @@
+---
+layout: post
+title:  "K8s 練習 - part 1"
+date:   2019-05-01 08:33:00 +0800
+categories: K8s
+---
+之前就想玩玩K8s，所以就抽空來玩玩喽~  
+
+## Install
+
+這邊主要先把[minikube][install_minikube]裝起來(以下環境為Archlinux)
+
+1. install virtualbox  
+    * `sudo pacman -S virtualbox`
+    * 選擇 virtualbox-host-modules-arch
+    * `sudo modprobe vboxdrv`
+2. `curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+  && chmod +x minikube`  
+3. `sudo cp minikube /usr/local/bin/. && rm minikube`  
+4. Install [kubectl][install_kubectl]:
+    * `curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl `
+    * `chmod +x ./kubectl`  
+    * `sudo mv ./kubectl /usr/local/bin/kubectl`
+
+
+## start
+
+查看目前版本  
+
+```text
+$ minikube version
+minikube version: v1.0.1
+```
+
+開始，第一次啟動時會跑很久，因為要把環境裝起來  
+
+```text
+$ minikube start
+😄  minikube v1.0.1 on linux (amd64)
+💿  Downloading Minikube ISO ...
+ 142.88 MB / 142.88 MB [============================================] 100.00% 0s
+🤹  Downloading Kubernetes v1.14.1 images in the background ...
+🔥  Creating virtualbox VM (CPUs=2, Memory=2048MB, Disk=20000MB) ...
+📶  "minikube" IP address is 192.168.99.100
+🐳  Configuring Docker as the container runtime ...
+🐳  Version of container runtime is 18.06.3-ce
+⌛  Waiting for image downloads to complete ...
+✨  Preparing Kubernetes environment ...
+💾  Downloading kubelet v1.14.1
+💾  Downloading kubeadm v1.14.1
+🚜  Pulling images required by Kubernetes v1.14.1 ...
+🚀  Launching Kubernetes v1.14.1 using kubeadm ... 
+⌛  Waiting for pods: apiserver proxy etcd scheduler controller dns
+🔑  Configuring cluster permissions ...
+🤔  Verifying component health .....
+💗  kubectl is now configured to use "minikube"
+💡  For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/
+🏄  Done! Thank you for using minikube!
+```
+
+查看狀態  
+
+```text
+$ minikube status
+host: Running
+kubelet: Running
+apiserver: Running
+kubectl: Correctly Configured: pointing to minikube-vm at 192.168.99.100
+```
+
+```text
+$ kubectl cluster-info
+Kubernetes master is running at https://192.168.99.100:8443
+KubeDNS is running at https://192.168.99.100:8443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```
+
+config  
+
+```text
+$ cat .kube/config 
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/zonda/.minikube/ca.crt
+    server: https://192.168.99.100:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /home/zonda/.minikube/client.crt
+    client-key: /home/zonda/.minikube/client.key
+```
+
+圖形化操作  
+
+```text
+$ minikube dashboard
+```
+
+![](/assets\images\2019-05-01-K8s-exercise_part_1\k8s_dashboard.png)
+
+執行hello-minikube:  
+
+```text
+$ kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.10 --port=8080
+kubectl run --generator=deployment/apps.v1 is DEPRECATED and will be removed in a future version. Use kubectl run --generator=run-pod/v1 or kubectl create instead.
+deployment.apps/hello-minikube created
+```
+
+查看pods狀態:  
+
+```text
+$ kubectl get pods
+NAME                              READY   STATUS              RESTARTS   AGE
+hello-minikube-56cdb79778-trxx9   0/1     ContainerCreating   0          108s
+```
+
+對外公開應用:  
+透過kubectl expose可以讓外面連到`hello-minikube`這個服務  
+
+```text
+$ kubectl expose deployment hello-minikube --type=NodePort
+service/hello-minikube exposed
+
+$ kubectl get pods
+NAME                              READY   STATUS    RESTARTS   AGE
+hello-minikube-56cdb79778-trxx9   1/1     Running   0          27m
+
+$ kubectl get services
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+hello-minikube   NodePort    10.103.163.153   <none>        8080:30337/TCP   28m
+kubernetes       ClusterIP   10.96.0.1        <none>        443/TCP          11h
+
+$ minikube service hello-minikube --url
+http://192.168.99.100:30337
+```
+
+連上http://192.168.99.100:30337會出現  
+
+```text
+Hostname: hello-minikube-56cdb79778-trxx9
+
+Pod Information:
+	-no pod information available-
+
+Server values:
+	server_version=nginx: 1.13.3 - lua: 10008
+
+Request Information:
+	client_address=172.17.0.1
+	method=GET
+	real path=/
+	query=
+	request_version=1.1
+	request_scheme=http
+	request_uri=http://192.168.99.100:8080/
+
+Request Headers:
+	accept=text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+	accept-encoding=gzip, deflate
+	accept-language=en-US,en;q=0.5
+	connection=keep-alive
+	host=192.168.99.100:30337
+	upgrade-insecure-requests=1
+	user-agent=Mozilla/5.0 (X11; Linux x86_64; rv:66.0) Gecko/20100101 Firefox/66.0
+
+Request Body:
+	-no body in request-
+```
+
+
+
+[install_minikube]:https://kubernetes.io/docs/tasks/tools/install-minikube/  
+[install_kubectl]:https://kubernetes.io/docs/tasks/tools/install-kubectl/  
