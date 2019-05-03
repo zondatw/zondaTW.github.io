@@ -2,7 +2,7 @@
 layout: post
 title:  "Unicorn engine tutorial 練習 - part 4"
 date:   2019-04-28 13:51:24 +0800
-categories: Reversing
+categories: [Reversing, Unicorn engine]
 ---
 
 ## 前言
