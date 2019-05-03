@@ -1,0 +1,26 @@
+---
+layout: default
+permalink: /categories/
+title: Categories
+---
+
+<article class="dark archive">
+{% for category in site.categories %}
+  <article class="dark archive">
+    {% capture category_name %}{{ category | first }}{% endcapture %}
+    <div id="#{{ category_name | slugize }}"></div>
+
+    <p>
+      <h3 class="category-head">{{ category_name }}</h3>
+      <a name="{{ category_name | slugize }}"></a>
+      {% for post in site.categories[category_name] %}
+        <div>
+            {%- assign date_format = site.date_format | default: "%B %d, %Y" -%}
+            <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: date_format }}</time>
+            <h6><a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }}</a></h6></br>
+        </div>
+      {% endfor %}
+    </p>
+  </article>
+{% endfor %}
+</article>

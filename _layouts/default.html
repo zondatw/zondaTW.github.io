@@ -17,6 +17,13 @@
       <div class="navbar-header">
         <h1><a href="{{ "/" | relative_url }}">{{ site.title | escape }}</a></h1>
       </div>
+      {% if site.navigation %}
+      <span class="nav navbar-nav navbar-right">
+      {% for path in site.navigation %}
+        {% assign node = site.pages | where: "name", path | first %}<a href="{{ node.url | relative_url }}">{{ node.title }}</a>
+      {% endfor %}
+      </span>
+      {% endif %}
       {% if site.icons %}
       <span class="nav navbar-nav navbar-right">
         {% for link in site.icons %}

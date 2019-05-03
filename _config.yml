@@ -11,6 +11,9 @@ icons:
 
 paginate: 12                  # number of articles per page
 
+navigation:                  # (optional) site navigation in the header
+  - categories.html
+
 # Build settings
 markdown: kramdown
 plugins:
