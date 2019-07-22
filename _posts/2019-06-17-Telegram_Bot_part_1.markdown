@@ -2,7 +2,7 @@
 layout: post
 title:  "Telegram Bot - part 1"
 date:   2019-06-17 20:04:00 +0800
-categories: Bot
+categories: Telegram Bot
 ---
 
 ## 前言
