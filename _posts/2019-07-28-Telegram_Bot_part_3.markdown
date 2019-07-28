@@ -65,6 +65,19 @@ def send_inline_keyboard(token, chat_id, message):
 點擊任意按鈕後，webhook可以拿到這次事件的內容:  
 ![Inline Keyboard Pressed](/assets\images\2019-07-28-Telegram_Bot_part_3\inline_keyboard_pressed.PNG)  
 
+拿取到事件後，可以在一定的時間內回覆這個事件:
+
+```python
+def answer_callback_query(token, callback_query_id, message):
+    url = f"https://api.telegram.org/bot{token}/answerCallbackQuery?callback_query_id={callback_query_id}&text={message}"
+    response = requests.get(url)
+    return response.status_code == 200, response.text
+```
+
+比方說，不管按任意按鈕，都回覆個`I'm test`  
+![answer callback query](/assets\images\2019-07-28-Telegram_Bot_part_3\answerCallback.PNG)  
+
+
 ### Keybaord
 
 ```python
