@@ -122,5 +122,19 @@ def send_keyboard(token, chat_id, message):
 ![Keyboard pressed](/assets\images\2019-07-28-Telegram_Bot_part_3\keyboard_pressed.PNG)  
 ![Keyboard pressed content](/assets\images\2019-07-28-Telegram_Bot_part_3\keyboard_pressed_content.PNG)  
 
+我們也可以用ReplyKeyboardRemove將Keyboard刪掉:  
+
+```python
+def remove_keyboard(token, chat_id, message):
+    reply_markup = {
+        "remove_keyboard": True,
+        "selective": False,
+    }
+    reply_markup = json.dumps(reply_markup)
+    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}&reply_markup={reply_markup}"
+    response = requests.get(url)
+    return response.status_code == 200, response.text
+```
+
 這就是Telegram Bot 主要的2個keyboard功能。  
 Part 3 就先到這囉~  
