@@ -1,0 +1,40 @@
+---
+layout: post
+title:  "2019 flare-on write up 03"
+date:   2019-10-01 00:02:00 +0800
+categories: Flare-on
+---
+
+## 第三題Flarebear
+
+## Problem
+![problem](/assets/images/2019-10-01-2019-flare-on_write_up_03/problem.PNG)  
+
+## Solution
+
+拿到了一個apk檔，用apktool解開，再用dex2jar分析出下面的關鍵:  
+![feed](/assets/images/2019-10-01-2019-flare-on_write_up_03/feed.PNG)  
+![play](/assets/images/2019-10-01-2019-flare-on_write_up_03/play.PNG)  
+![clean](/assets/images/2019-10-01-2019-flare-on_write_up_03/clean.PNG)  
+![setMood](/assets/images/2019-10-01-2019-flare-on_write_up_03/setMood.PNG)  
+![isHappy](/assets/images/2019-10-01-2019-flare-on_write_up_03/isHappy.PNG)  
+![isEcstatic](/assets/images/2019-10-01-2019-flare-on_write_up_03/isEcstatic.PNG)  
+
+```python
+from z3 import *
+
+f, p, c = Ints("f p c")
+x = Solver()
+x.add(10 * f - 2 * p == 72)
+x.add(2 * f + 4 * p - c == 30)
+x.add(-1 * f + -1 * p + 6 * c == 0)
+x.add(f / p >= 2.0)
+x.add(f / p <= 2.5)
+x.check()
+x.model()
+# [f = 8, p = 4, c = 2]
+```
+
+然後按feed 8次、play 4次、clean 2次，就拿到flag囉!  
+
+![answer](/assets/images/2019-10-01-2019-flare-on_write_up_03/answer.PNG)  
