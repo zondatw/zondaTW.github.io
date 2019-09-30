@@ -1,0 +1,28 @@
+---
+layout: post
+title:  "2019 flare-on write up 05"
+date:   2019-10-01 00:04:00 +0800
+categories: Flare-on
+---
+
+## 第五題demo
+
+## Problem
+![problem](/assets/images/2019-10-01-2019-flare-on_write_up_05/problem.PNG)  
+
+## Solution
+
+一開始打開是一個A一直在旋轉:  
+![init](/assets/images/2019-10-01-2019-flare-on_write_up_05/init.PNG)  
+
+分析了很久後，發現他會create 2次 mesh，繼續觀察後發現他只會用到第一次create的，後來將第二次的資料蓋過第一個後，就噴出flag了。  
+
+create two:
+![create_two](/assets/images/2019-10-01-2019-flare-on_write_up_05/create_two.PNG)  
+Call createMeshFVF:  
+![create_mesh](/assets/images/2019-10-01-2019-flare-on_write_up_05/create_mesh.PNG)  
+Call only one:  
+![call_only_one](/assets/images/2019-10-01-2019-flare-on_write_up_05/call_only_one.PNG)  
+
+Answer:  
+![answer](/assets/images/2019-10-01-2019-flare-on_write_up_05/answer.PNG)  
