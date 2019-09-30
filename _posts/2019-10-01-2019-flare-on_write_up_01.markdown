@@ -1,0 +1,46 @@
+---
+layout: post
+title:  "2019 flare-on write up 01"
+date:   2019-10-01 00:00:00 +0800
+categories: Flare-on
+---
+
+## 成績
+
+這次終於成功完解全部的題目啦~  
+在這次的競賽中真的學到了很多東西，碰了很多以前沒碰過的，比方說:NES ROM，  
+同時很感謝twitter上網友的一些小提示才能全解，期待明年能不靠提示自己全解出來。  
+
+![flare](/assets/images/2019-10-01-2019-flare-on_write_up_01/flare.PNG)  
+![flare-on](/assets/images/2019-10-01-2019-flare-on_write_up_01/flare-on.png)  
+
+## 第一題Memecat Battlestation [Shareware Demo Edition]
+
+## Problem
+![problem](/assets/images/2019-10-01-2019-flare-on_write_up_01/problem.PNG)  
+
+## Solution
+
+打開檔案，是一個遊戲  
+![game](/assets/images/2019-10-01-2019-flare-on_write_up_01/game.PNG)  
+
+用dnSpy掃過一次圖檔，發現共有兩關。  
+分析一下檔案結構後，會看到Stage1Form, Stage2Form，猜測主要的code應該分別在這2個檔案中，  
+再仔細看一下找到2個關鍵的code  
+Stage1From:  
+![FireButton_Click](/assets/images/2019-10-01-2019-flare-on_write_up_01/FireButton_Click.PNG)  
+Stage2Form:  
+![isValidWeaponCode](/assets/images/2019-10-01-2019-flare-on_write_up_01/isValidWeaponCode.PNG)  
+
+Stage1很簡單的輸入`RAINBOW`就過關  
+然後Stage2就稍微算一下:  
+```python
+encode_list = ['\u0003', ' ', '&', '$', '-', '\u001e', '\u0002', ' ', '/', '/', '.', '/']
+answer = ""
+for i in encode_list:
+    answer += chr(ord(i) ^ ord('A'))
+# answer = Bagel_Cannon
+```
+輸入`Bagel_Cannon`後就拿到flag了。  
+
+![answer](/assets/images/2019-10-01-2019-flare-on_write_up_01/answer.PNG)  
