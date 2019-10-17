@@ -178,7 +178,7 @@ export class TodoService {
 ```
 
 這樣他就會去拿DB中的資料囉!  
-![in_memory](/assets/images/2019-10-17-angular_part_4/in_memory_db.PNG)  
+![in_memory](/assets/images/2019-10-18-angular_part_4/in_memory_db.PNG)  
 
 
 ## Modify todo info
@@ -336,9 +336,9 @@ export class TodoDetailComponent implements OnInit {
 ```
 
 就可以修改DB中Todo的資料囉!  
-![before_modify](/assets/images/2019-10-17-angular_part_4/before_modify.PNG)  
-![ready_modify](/assets/images/2019-10-17-angular_part_4/ready_modify.PNG)  
-![after_modify](/assets/images/2019-10-17-angular_part_4/after_modify.PNG)  
+![before_modify](/assets/images/2019-10-18-angular_part_4/before_modify.PNG)  
+![ready_modify](/assets/images/2019-10-18-angular_part_4/ready_modify.PNG)  
+![after_modify](/assets/images/2019-10-18-angular_part_4/after_modify.PNG)  
 
 ## Add new Todo
 
@@ -480,9 +480,9 @@ export class TodosComponent implements OnInit {
 ```
 
 就可以新增DB中Todo的資料囉!  
-![before_add](/assets/images/2019-10-17-angular_part_4/before_add.PNG)  
-![ready_add](/assets/images/2019-10-17-angular_part_4/ready_add.PNG)  
-![after_add](/assets/images/2019-10-17-angular_part_4/after_add.PNG)  
+![before_add](/assets/images/2019-10-18-angular_part_4/before_add.PNG)  
+![ready_add](/assets/images/2019-10-18-angular_part_4/ready_add.PNG)  
+![after_add](/assets/images/2019-10-18-angular_part_4/after_add.PNG)  
 
 ## Delete Todo
 
@@ -643,7 +643,7 @@ export class TodosComponent implements OnInit {
 }
 ```
 
-![before_delete](/assets/images/2019-10-17-angular_part_4/before_delete.PNG)  
-![after_delete](/assets/images/2019-10-17-angular_part_4/after_delete.PNG)  
+![before_delete](/assets/images/2019-10-18-angular_part_4/before_delete.PNG)  
+![after_delete](/assets/images/2019-10-18-angular_part_4/after_delete.PNG)  
 
 part 4就先到這裡囉~  
