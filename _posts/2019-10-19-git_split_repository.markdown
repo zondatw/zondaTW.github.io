@@ -79,3 +79,17 @@ To D:/self/project/tool_1
 如果tool_1這個branch不要了的話，就`git branch -d tool_1`  
 
 接著就可以用一樣的步驟分離tool_2囉!  
+
+### subtree
+
+上面在分離log時是用`filter-branch`，還有另一個功能叫做`subtree`能做到一樣的事情  
+
+`git subtree split -P {folder path} -b {branch name}`  
+
+```text
+λ git subtree split -P tool_2 -b "tool_2"
+Created branch 'tool_2'
+4876dda5ff1a8f60574d3d9161784997f8345dcb
+```
+
+![subtree](/assets/images/2019-10-19-git_split_repository/subtree.PNG)  
