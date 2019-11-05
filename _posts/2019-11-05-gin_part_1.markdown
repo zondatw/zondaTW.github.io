@@ -1,0 +1,398 @@
+---
+layout: post
+title:  "Gin - part 1"
+date:   2019-11-05 00:33:00 +0800
+categories: Golang Gin
+---
+
+## 前言
+
+因為想玩玩golang的gin，所以就來玩玩囉!  
+[官方Github](https://github.com/gin-gonic/gin)  
+
+## 安裝
+
+`λ go get -u github.com/gin-gonic/gin`  
+
+## Demo
+
+```go
+// demo.go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	engine := gin.Default()
+	engine.Any("/", WebRoot)
+	engine.Run(":8081")
+}
+
+func WebRoot(context *gin.Context) {
+	context.String(http.StatusOK, "Hello world!")
+}
+```
+
+```shell
+λ go run demo.go
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:   export GIN_MODE=release
+ - using code:  gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /                         --> main.WebRoot (3 handlers)
+[GIN-debug] POST   /                         --> main.WebRoot (3 handlers)
+[GIN-debug] PUT    /                         --> main.WebRoot (3 handlers)
+[GIN-debug] PATCH  /                         --> main.WebRoot (3 handlers)
+[GIN-debug] HEAD   /                         --> main.WebRoot (3 handlers)
+[GIN-debug] OPTIONS /                         --> main.WebRoot (3 handlers)
+[GIN-debug] DELETE /                         --> main.WebRoot (3 handlers)
+[GIN-debug] CONNECT /                         --> main.WebRoot (3 handlers)
+[GIN-debug] TRACE  /                         --> main.WebRoot (3 handlers)
+[GIN-debug] Listening and serving HTTP on :8081
+[GIN] 2019/11/05 - 01:00:56 | 200 |            0s |       127.0.0.1 | GET      /
+[GIN] 2019/11/05 - 01:00:56 | 404 |            0s |       127.0.0.1 | GET      /favicon.ico
+```
+
+![demo](/assets/images/2019-11-05-gin_part_1/demo.PNG)  
+
+## Router
+
+### path parameter
+
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	engine := gin.Default()
+	engine.GET("/:name", getting)
+	engine.Run(":8081")
+}
+
+func getting(context *gin.Context) {
+	name := context.Param("name")
+	context.String(http.StatusOK, "Hello %s!", name)
+}
+```
+
+![path_parameter](/assets/images/2019-11-05-gin_part_1/path_parameter.PNG)
+
+### get
+
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	engine := gin.Default()
+	// url: /welcome/{name}?age=5&birthday=1000/01/01
+	engine.GET("/welcome/:name", getting)
+	engine.Run(":8081")
+}
+
+func getting(context *gin.Context) {
+	name := context.Param("name")
+	age := context.DefaultQuery("age", "0")
+	birthday := context.Query("birthday")
+	context.String(http.StatusOK, "Hello %s!\nage: %s\nBirthday: %s\n", name, age, birthday)
+}
+```
+
+
+#### struct
+
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name     string `form:"name"`
+	Age      int    `form:"age"`
+	Birthday string `form:"birthday"`
+}
+
+func main() {
+	engine := gin.Default()
+	// url: /welcome/{name}?age=5&birthday=1000/01/01
+	engine.GET("/welcome/:name", getting)
+	engine.Run(":8081")
+}
+
+func getting(context *gin.Context) {
+	var person Person
+	name := context.Param("name")
+	if context.ShouldBindQuery(&person) == nil {
+		context.String(http.StatusOK, "Hello %s!\nage: %d\nBirthday: %s\n", name, person.Age, person.Birthday)
+	} else {
+		context.String(400, "Bad Request")
+	}
+}
+```
+
+![get_struct](/assets/images/2019-11-05-gin_part_1/get_struct.PNG)
+
+### post
+
+#### form post
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	engine := gin.Default()
+	engine.POST("/form_post", form_post)
+	engine.Run(":8081")
+}
+
+func form_post(context *gin.Context) {
+	name := context.PostForm("name")
+	age := context.DefaultPostForm("age", "0")
+	birthday := context.PostForm("birthday")
+	context.String(http.StatusOK, "Hello %s!\nage: %s\nBirthday: %s\n", name, age, birthday)
+}
+```
+
+```shell
+λ curl -X POST http://127.0.0.1:8081/form_post -F "name=haha" -F "age=5" -F "birthday=1000/01/01"
+Hello haha!
+age: 5
+Birthday: 1000/01/01
+```
+
+##### struct
+
+```golang
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name     string `form:"name"`
+	Age      int    `form:"age"`
+	Birthday string `form:"birthday"`
+}
+
+func main() {
+	engine := gin.Default()
+	engine.POST("/form_post", form_post)
+	engine.Run(":8081")
+}
+
+func form_post(context *gin.Context) {
+	var person Person
+	if context.ShouldBind(&person) == nil {
+		context.String(http.StatusOK, "Hello %s!\nage: %d\nBirthday: %s\n", person.Name, person.Age, person.Birthday)
+	} else {
+		context.String(400, "Bad Request")
+	}
+}
+```
+
+```shell
+λ curl -X POST http://127.0.0.1:8081/form_post -F "name=haha" -F "age=5" -F "birthday=1000/01/01"
+Hello haha!
+age: 5
+Birthday: 1000/01/01
+```
+
+#### json post
+
+```go
+package main
+
+import (
+	"log"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	engine := gin.Default()
+	engine.POST("/json_post", json_post)
+	engine.Run(":8081")
+}
+
+func json_post(context *gin.Context) {
+	rawData, err := context.GetRawData()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println(string(rawData))
+	context.String(200, "ok")
+}
+```
+
+```shell
+λ curl -X POST http://127.0.0.1:8081/json_post -H "content-type: application/json" -d "{ 'name': 'haha', 'age': 5, 'birthday': '1000/01/01'}"
+ok
+```
+
+```shell
+2019/11/06 00:36:26 { 'name': 'haha', 'age': 5, 'birthday': '1000/01/01'}
+[GIN] 2019/11/06 - 00:36:26 | 200 |            0s |       127.0.0.1 | POST     /json_post
+```
+
+##### struct
+
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name     string `json:"name" binding:"required"`
+	Age      int    `json:"age" binding:"required"`
+	Birthday string `json:"birthday" binding:"required"`
+}
+
+func main() {
+	engine := gin.Default()
+	engine.POST("/json_post", json_post)
+	engine.Run(":8081")
+}
+
+func json_post(context *gin.Context) {
+	var person Person
+	if err := context.ShouldBindJSON(&person); err == nil {
+		context.String(http.StatusOK, "Hello %s!\nage: %d\nBirthday: %s\n", person.Name, person.Age, person.Birthday)
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+```
+
+![post_struct](/assets/images/2019-11-05-gin_part_1/post_struct.PNG)
+
+#### Combine json and form post
+
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name     string `form:"name" json:"name" binding:"required"`
+	Age      int    `form:"age" json:"age" binding:"required"`
+	Birthday string `form:"birthday" json:"birthday" binding:"required"`
+}
+
+func main() {
+	engine := gin.Default()
+	engine.POST("/form_post", form_post)
+	engine.POST("/json_post", json_post)
+	engine.Run(":8081")
+}
+
+func form_post(context *gin.Context) {
+	var person Person
+	if err := context.ShouldBind(&person); err == nil {
+		context.String(http.StatusOK, "form post\nHello %s!\nage: %d\nBirthday: %s\n", person.Name, person.Age, person.Birthday)
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+
+func json_post(context *gin.Context) {
+	var person Person
+	if err := context.ShouldBindJSON(&person); err == nil {
+		context.String(http.StatusOK, "json post\nHello %s!\nage: %d\nBirthday: %s\n", person.Name, person.Age, person.Birthday)
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+```
+
+![combine_json_post](/assets/images/2019-11-05-gin_part_1/combine_json_post.PNG)
+![combine_form_post](/assets/images/2019-11-05-gin_part_1/combine_form_post.PNG)
+
+#### Group
+
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name     string `form:"name" json:"name" binding:"required"`
+	Age      int    `form:"age" json:"age" binding:"required"`
+	Birthday string `form:"birthday" json:"birthday" binding:"required"`
+}
+
+func main() {
+	router := gin.Default()
+	v1 := router.Group("/v1")
+	{
+		v1.POST("/welcome", form_post)
+	}
+	v2 := router.Group("/v2")
+	{
+		v2.POST("/welcome", json_post)
+	}
+	router.Run(":8081")
+}
+
+func form_post(context *gin.Context) {
+	var person Person
+	if err := context.ShouldBind(&person); err == nil {
+		context.String(http.StatusOK, "form post\nHello %s!\nage: %d\nBirthday: %s\n", person.Name, person.Age, person.Birthday)
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+
+func json_post(context *gin.Context) {
+	var person Person
+	if err := context.ShouldBindJSON(&person); err == nil {
+		context.String(http.StatusOK, "json post\nHello %s!\nage: %d\nBirthday: %s\n", person.Name, person.Age, person.Birthday)
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+```
+
+![group_v1](/assets/images/2019-11-05-gin_part_1/group_v1.PNG)
+![group_v2](/assets/images/2019-11-05-gin_part_1/group_v2.PNG)
+
+Part1就先到這囉~~
