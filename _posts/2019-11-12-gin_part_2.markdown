@@ -1,0 +1,232 @@
+---
+layout: post
+title:  "Gin - part 2"
+date:   2019-11-12 00:12:00 +0800
+categories: Golang Gin
+---
+
+## 前言
+
+繼續來玩gin囉~  
+
+## Middleware
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	engine := gin.Default()
+	engine.Any("/:name", middleware1, middleware2, middleware3, hello)
+	engine.Run(":8081")
+}
+
+func hello(context *gin.Context) {
+	name := context.Param("name")
+	test := context.GetString("test")
+	log.Printf("test: %s!", test)
+	log.Printf("Hello %s!", name)
+	context.String(http.StatusOK, "Hello %s!", name)
+}
+
+func middleware1(context *gin.Context) {
+	buf := make([]byte, 1024)
+	num, _ := context.Request.Body.Read(buf)
+	log.Printf("middleware1: %s\n", string(buf[:num]))
+	context.Next()
+}
+
+func middleware2(context *gin.Context) {
+	log.Printf("middleware2: start")
+	context.Next()
+	log.Printf("middleware2: end")
+}
+
+func middleware3(context *gin.Context) {
+	context.Set("test", "1234567890")
+	context.Next()
+}
+```
+
+output:  
+
+```shell
+2019/11/12 23:43:49 middleware1: {
+"hello": "world"
+}
+2019/11/12 23:43:49 middleware2: start
+2019/11/12 23:43:49 test: 1234567890!
+2019/11/12 23:43:49 Hello yooo!
+2019/11/12 23:43:49 middleware2: end
+```
+
+middleware1他是將接收到的body資訊輸出到log中  
+
+```go
+func middleware1(context *gin.Context) {
+	buf := make([]byte, 1024)
+	num, _ := context.Request.Body.Read(buf)
+	log.Printf("middleware1: %s\n", string(buf[:num]))
+	context.Next()
+}
+```
+
+middleware2他會先輸出`middleware2: start`後，等到後續都結束後，返回時才會輸出`middleware2: end`，比較django的middleware，context.Next()之前的就是request，之後的就是response  
+
+```go
+func middleware2(context *gin.Context) {
+	log.Printf("middleware2: start")
+	context.Next()
+	log.Printf("middleware2: end")
+}
+```
+
+middleware3在middlware中設新的值傳達到後續  
+
+```go
+func middleware3(context *gin.Context) {
+	context.Set("test", "1234567890")
+	context.Next()
+}
+```
+
+middleware順序為:  
+進入: middleware1 -> middleware2 -> middleware3 -> hello  
+返回: hello -> middleware3 -> middleware2 -> middleware1  
+
+```go
+engine.Any("/:name", middleware1, middleware2, middleware3, hello)
+```
+
+### 區分middleware
+
+剛剛的範例是專門給`/:name`這router在用的，假設我現在有個middleware想要所有router都使用，該怎麼做呢?  
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	engine := gin.Default()
+	engine.Use(middlewareGlobal)
+	engine.Any("/demo", demo)
+	engine.Any("/demo/:name", middleware1, middleware2, middleware3, hello)
+	engine.Run(":8081")
+}
+
+func demo(context *gin.Context) {
+	context.String(http.StatusOK, "demo")
+}
+
+func hello(context *gin.Context) {
+	name := context.Param("name")
+	test := context.GetString("test")
+	log.Printf("test: %s!", test)
+	log.Printf("Hello %s!", name)
+	context.String(http.StatusOK, "Hello %s!", name)
+}
+
+func middlewareGlobal(context *gin.Context) {
+	log.Printf("Global middleware")
+	context.Next()
+}
+
+func middleware1(context *gin.Context) {
+	buf := make([]byte, 1024)
+	num, _ := context.Request.Body.Read(buf)
+	log.Printf("middleware1: %s\n", string(buf[:num]))
+	context.Next()
+}
+
+func middleware2(context *gin.Context) {
+	log.Printf("middleware2: start")
+	context.Next()
+	log.Printf("middleware2: end")
+}
+
+func middleware3(context *gin.Context) {
+	context.Set("test", "1234567890")
+	context.Next()
+}
+```
+
+output:  
+
+```shell
+2019/11/12 23:57:40 Global middleware
+2019/11/12 23:57:40 middleware1: {
+"hello": "world"
+}
+2019/11/12 23:57:40 middleware2: start
+2019/11/12 23:57:40 test: 1234567890!
+2019/11/12 23:57:40 Hello yooooo!
+2019/11/12 23:57:40 middleware2: end
+[GIN] 2019/11/12 - 23:57:40 | 200 |     72.8047ms |       127.0.0.1 | POST     /demo/yooooo
+2019/11/12 23:57:55 Global middleware
+[GIN] 2019/11/12 - 23:57:55 | 200 |       997.3µs |       127.0.0.1 | GET      /demo
+```
+
+有時候可能出現api v1專用的middleware，比方說不同Version的api驗證方式不同的情況，可以怎麼做呢?  
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+	v1 := router.Group("/v1", apiV1middleware)
+	{
+		v1.GET("/welcome", welcomeV1)
+	}
+	v2 := router.Group("/v2")
+	{
+		v2.GET("/welcome", welcomeV2, apiV2middleware)
+	}
+	router.Run(":8081")
+}
+
+func welcomeV1(context *gin.Context) {
+	context.String(http.StatusOK, "api v1 test")
+}
+
+func welcomeV2(context *gin.Context) {
+	context.String(http.StatusOK, "api v2 test")
+}
+
+func apiV1middleware(context *gin.Context) {
+	log.Printf("api v1 middlware")
+}
+
+func apiV2middleware(context *gin.Context) {
+	log.Printf("api v2 middlware")
+}
+```
+
+output:  
+
+```shell
+2019/11/13 00:04:23 api v1 middlware
+[GIN] 2019/11/13 - 00:04:23 | 200 |     71.8072ms |       127.0.0.1 | GET      /v1/welcome
+2019/11/13 00:04:34 api v2 middlware
+[GIN] 2019/11/13 - 00:04:34 | 200 |            0s |       127.0.0.1 | GET      /v2/welcome
+```
+
+Part2就先到這囉~~
