@@ -1,0 +1,396 @@
+---
+layout: post
+title:  "Gin - part 3"
+date:   2019-11-27 00:33:00 +0800
+categories: Golang Gin
+---
+
+## 前言
+
+繼續來玩gin囉~  
+
+## Database
+
+玩Web的東西，怎麼可能不碰DB呢，所以就來學學怎麼連接DB囉~  
+
+先建個測試用的DB，然後寫個測試連接的code
+
+```golang
+package main
+
+import (
+	"database/sql"
+	"fmt"
+
+	_ "github.com/lib/pq"
+)
+
+const (
+	host     = "localdocker"
+	port     = 5432
+	user     = "postgres"
+	password = "password"
+	dbname   = "testDB"
+)
+
+func main() {
+	connectionString := fmt.Sprintf("host=%s port=%d "+
+		"user=%s password=%s "+
+		"dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully created connection to database")
+}
+```
+
+成功的話會顯示  
+
+```shell
+λ go run demo.go
+Successfully created connection to database
+```
+
+### create and delete table
+
+```golang
+package main
+
+import (
+	"database/sql"
+	"fmt"
+
+	_ "github.com/lib/pq"
+)
+
+const (
+	host     = "localdocker"
+	port     = 5432
+	user     = "postgres"
+	password = "password"
+	dbname   = "testDB"
+)
+
+func createTable(db *sql.DB) {
+	_, err := db.Exec(`
+		CREATE TABLE person (
+			id serial PRIMARY KEY,
+			name VARCHAR(50) NOT NULL,
+			age integer DEFAULT 0
+		);`)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished creating table")
+}
+
+func deleteTable(db *sql.DB) {
+	_, err := db.Exec(`DROP TABLE IF EXISTS person;`)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished dropping table")
+}
+
+func main() {
+	connectionString := fmt.Sprintf("host=%s port=%d "+
+		"user=%s password=%s "+
+		"dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully created connection to database")
+
+	createTable(db)
+	deleteTable(db)
+}
+```
+
+成功的話會顯示  
+
+```shell
+λ go run demo.go
+Successfully created connection to database
+Finished creating table
+Finished dropping table
+```
+
+### Insert and Query
+
+```golang
+package main
+
+import (
+	"database/sql"
+	"fmt"
+
+	_ "github.com/lib/pq"
+)
+
+const (
+	host     = "localdocker"
+	port     = 5432
+	user     = "postgres"
+	password = "password"
+	dbname   = "testDB"
+)
+
+func createTable(db *sql.DB) {
+	_, err := db.Exec(`
+		CREATE TABLE person (
+			id serial PRIMARY KEY,
+			name VARCHAR(50) NOT NULL,
+			age integer DEFAULT 0
+		);`)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished creating table")
+}
+
+func deleteTable(db *sql.DB) {
+	_, err := db.Exec(`DROP TABLE IF EXISTS person;`)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished dropping table")
+}
+
+func insertData(db *sql.DB, name string, age int) {
+	sql_statement := "INSERT INTO person (name, age) VALUES ($1, $2);"
+	_, err := db.Exec(sql_statement, name, age)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished inserting data")
+}
+
+func queryTable(db *sql.DB) {
+	var id int
+	var name string
+	var age int
+
+	sql_statement := "SELECT * from person;"
+	rows, err := db.Query(sql_statement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		switch err := rows.Scan(&id, &name, &age); err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned")
+		case nil:
+			fmt.Printf("ID: %d, Name: %s, Age: %d\n", id, name, age)
+		default:
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
+func main() {
+	connectionString := fmt.Sprintf("host=%s port=%d "+
+		"user=%s password=%s "+
+		"dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully created connection to database")
+
+	deleteTable(db)
+	createTable(db)
+	insertData(db, "Haha", 5)
+	insertData(db, "Yooo", 15)
+	insertData(db, "DaDa", 25)
+	queryTable(db)
+}
+```
+
+成功的話會顯示  
+
+```shell
+λ go run demo.go
+Successfully created connection to database
+Finished dropping table
+Finished creating table
+Finished inserting table
+Finished inserting table
+Finished inserting table
+ID: 1, Name: Haha, Age: 5
+ID: 2, Name: Yooo, Age: 15
+ID: 3, Name: DaDa, Age: 25
+```
+
+### Update data
+
+```golang
+package main
+
+import (
+	"database/sql"
+	"fmt"
+
+	_ "github.com/lib/pq"
+)
+
+const (
+	host     = "localdocker"
+	port     = 5432
+	user     = "postgres"
+	password = "password"
+	dbname   = "testDB"
+)
+
+func createTable(db *sql.DB) {
+	_, err := db.Exec(`
+		CREATE TABLE person (
+			id serial PRIMARY KEY,
+			name VARCHAR(50) NOT NULL,
+			age integer DEFAULT 0
+		);`)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished creating table")
+}
+
+func deleteTable(db *sql.DB) {
+	_, err := db.Exec(`DROP TABLE IF EXISTS person;`)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished dropping table")
+}
+
+func insertData(db *sql.DB, name string, age int) {
+	sql_statement := "INSERT INTO person (name, age) VALUES ($1, $2);"
+	_, err := db.Exec(sql_statement, name, age)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished inserting data")
+}
+
+func queryTable(db *sql.DB) {
+	var id int
+	var name string
+	var age int
+
+	sql_statement := "SELECT * from person;"
+	rows, err := db.Query(sql_statement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		switch err := rows.Scan(&id, &name, &age); err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned")
+		case nil:
+			fmt.Printf("ID: %d, Name: %s, Age: %d\n", id, name, age)
+		default:
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
+func updateData(db *sql.DB, id int, name string, age int) {
+	sql_statement := "UPDATE person SET name = $2, age = $3 WHERE id = $1;"
+	_, err := db.Exec(sql_statement, id, name, age)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished updating data")
+}
+
+func deleteData(db *sql.DB, id int) {
+	sql_statement := "DELETE FROM person WHERE id = $1;"
+	_, err := db.Exec(sql_statement, id)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Finished deleting data")
+}
+
+func main() {
+	connectionString := fmt.Sprintf("host=%s port=%d "+
+		"user=%s password=%s "+
+		"dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully created connection to database")
+
+	deleteTable(db)
+	createTable(db)
+	insertData(db, "Haha", 5)
+	insertData(db, "Yooo", 15)
+	insertData(db, "DaDa", 25)
+	queryTable(db)
+	updateData(db, 1, "Yaaaaaaaaaa", 100)
+	deleteData(db, 2)
+	queryTable(db)
+}
+```
+
+成功的話會顯示  
+
+```shell
+λ go run demo.go
+Successfully created connection to database
+Finished dropping table
+Finished creating table
+Finished inserting data
+Finished inserting data
+Finished inserting data
+ID: 1, Name: Haha, Age: 5
+ID: 2, Name: Yooo, Age: 15
+ID: 3, Name: DaDa, Age: 25
+Finished updating data
+Finished deleting data
+ID: 3, Name: DaDa, Age: 25
+ID: 1, Name: Yaaaaaaaaaa, Age: 100
+```
+
