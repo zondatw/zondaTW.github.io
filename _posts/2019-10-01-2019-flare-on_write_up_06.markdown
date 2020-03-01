@@ -116,6 +116,7 @@ public static byte[] convert_data(byte[] data)
         array[i] = (byte)num3;
     }
     return array;
+}
 ```
 
 ```python
