@@ -2,7 +2,7 @@
 layout: post
 title:  "Linux menu application setting"
 date:   2020-12-31 11:43:00 +0800
-categories: Linux,Gentoo
+categories: Linux Gentoo
 ---
 
 # 前言
