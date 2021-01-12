@@ -5,7 +5,7 @@ date:   2020-12-31 11:43:00 +0800
 categories: Linux Gentoo
 ---
 
-# 前言
+## 前言
 
 現在主要的Linux是使用Gentoo，目前還是有很多軟體沒包在emerge中，
 所以有時候需要下載binary檔下來用，但有時又想在KDE的menu中可以看到它，
