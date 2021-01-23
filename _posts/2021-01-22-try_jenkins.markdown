@@ -113,5 +113,14 @@ Google了一下可能是跟clone的權限有關，
 ![](/assets/images/2021-01-22-try_jenkins/add_setup_shell.PNG)  
 ![](/assets/images/2021-01-22-try_jenkins/add_setup_shell_output.PNG)  
 
-就先到這拉～
+接著來測試一下用gitlab push來觸發  
+首先到gitlab中設定jenkins ci  
+project name要跟上面建置的project一樣哦  
+![](/assets/images/2021-01-22-try_jenkins/gitlab_jenkins_ci.PNG)  
+![](/assets/images/2021-01-22-try_jenkins/gitlab_jenkins_ci_setting.PNG)  
+
+接著push個commit，就可以看到jenkins被觸發囉  
+![](/assets/images/2021-01-22-try_jenkins/trigger_by_git_push.PNG)  
+
+就先到這拉～  
 之後再研究其他功能  
