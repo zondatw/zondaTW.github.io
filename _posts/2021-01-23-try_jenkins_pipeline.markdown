@@ -92,8 +92,6 @@ pipeline {
 ![](/assets/images/2021-01-23-try_jenkins_pipeline/click_update_gitlab_example_credential.PNG)  
 ![](/assets/images/2021-01-23-try_jenkins_pipeline/found_gitlab_credential_id.PNG)  
 
-
-
 來修改專案的Pipeline  
 
 ```pipeline
@@ -136,6 +134,44 @@ pipeline {
 更新完後按下馬上建置，就成功囉  
 ![](/assets/images/2021-01-23-try_jenkins_pipeline/updated_pipeline_setup.PNG)  
 
+## Jenkinsfile
+
+剛剛是在Jenkins上做設定，但這樣有個問題是，其他人不知道目前Pipeline的流程，以及可能會依據不同的功能出現Pipeline會需要修改，因此現在就是要讓設定跟著git repo一起版控拉  
+
+首先在Pipeline中變更設定成`Pipeline script from SCM`，並填完相關資訊  
+![](/assets/images/2021-01-23-try_jenkins_pipeline/set_pipeline_script_from_scm.PNG)  
+
+接著在專案中建立Jenkinsfile  
+
+```jenkinsfile
+pipeline {
+    agent any
+    tools {
+        go 'go_1_13_15'
+    }
+    environment {
+        GOPATH = ''
+        CGO_ENABLED = 0
+        GO111MODULE = 'on'
+    }
+    stages {
+        stage('Compile') {
+            steps {
+                sh 'go mod download'
+                sh 'go build'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'go test -cover ./...'
+            }
+        }
+    }
+}
+```
+
+在commit並push上remote，因我們的pipeline有設定push trigger，因此Pipeline就會開始動拉  
+![](/assets/images/2021-01-23-try_jenkins_pipeline/pipeline_script_from_scm_setup.PNG)  
 
 ## Reference
 
