@@ -13,6 +13,51 @@
     display: flex
     align-items: center
     justify-content: space-between
+    flex-wrap: nowrap
+    gap: 1rem
+
+  .navbar-nav
+    display: flex
+    flex-direction: row
+    align-items: center
+    gap: 1rem
+    margin: 0
+    padding: 0
+
+  .navbar-nav a
+    display: inline-flex
+    align-items: center
+
+  .navbar-header
+    flex: 0 0 auto
+
+  .nav.navbar-nav.navbar-right
+    flex: 0 0 auto
+
+  .nav.navbar-nav.navbar-right + .nav.navbar-nav.navbar-right
+    margin-left: 0.5rem
+
+@media (max-width: 720px)
+  #defaultHeader
+    height: auto
+
+    div
+      flex-wrap: wrap
+      align-items: flex-start
+
+    .navbar-header
+      width: 100%
+
+    .nav.navbar-nav.navbar-right
+      width: 100%
+      justify-content: flex-start
+      flex-wrap: wrap
+
+    .nav.navbar-nav.navbar-right + .nav.navbar-nav.navbar-right
+      margin-left: 0
+
+  #defaultHeader .icon
+    margin: 0 0.5em 0 0
 
 body
   display: flex
@@ -30,9 +75,9 @@ h1
 {% if site.navigation and site.icons %}
 
 body > header h1
-  width: 100%
+  width: auto
   margin-top: 0.1em
-  margin-bottom: 0.5em
+  margin-bottom: 0
 
 {% else %}
 
