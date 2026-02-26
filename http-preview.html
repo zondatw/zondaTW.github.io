@@ -4,70 +4,35 @@ permalink: /http-preview/
 title: Http Preview
 ---
 
-<article id="main-ui" class="dark">
-  <h2>HTTP Preview (Full Execution Mode)</h2>
-  <p>輸入 GitHub HTML 檔案網址，程式將轉換並直接在當前視窗渲染該網頁。</p>
+<article id="preview-interface" class="dark">
+  <h2>HTTP Preview</h2>
 
   <div class="http-preview">
     <label for="previewUrl">URL</label>
     <input id="previewUrl" type="url" placeholder="https://github.com/user/repo/blob/main/index.html" autocomplete="off" />
-    <button id="previewGo" type="button">Run Web</button>
-    <button id="previewOpen" type="button">Open in New Tab</button>
+    <button id="previewGo" type="button" style="background: #238636; border-color: #2ea043;">Run Web</button>
   </div>
-
   <div id="previewStatus" class="http-preview-status" hidden></div>
-
-  <div class="info-box">
-    <strong>💡 提示：</strong> 執行後若要回到此頁面，請點擊瀏覽器的「上一頁」。
-  </div>
+  <hr>
+  <div id="render-target"></div>
 </article>
 
 <style>
-  .http-preview {
-    display: grid;
-    grid-template-columns: 60px 1fr auto auto;
-    gap: 12px;
-    align-items: center;
-    margin: 16px 0 20px;
-  }
-  .http-preview input {
-    padding: 10px 12px;
-    border: 1px solid #444;
-    border-radius: 6px;
-    background: #1a1a1a;
-    color: #f2f2f2;
-    font-size: 14px;
-  }
-  .http-preview button {
-    padding: 10px 16px;
-    border: 1px solid #555;
-    border-radius: 6px;
-    background: #2a2a2a;
-    color: #fff;
-    cursor: pointer;
-  }
-  #previewGo {
-    background: #238636;
-    border-color: #2ea043;
-  }
-  .http-preview-status {
-    margin-bottom: 15px;
-    padding: 12px;
-    border-radius: 6px;
-    background: #252115;
-    border-left: 4px solid #d29922;
-    color: #e3b341;
-  }
-  .info-box {
-    margin-top: 20px;
-    padding: 15px;
-    background: #161b22;
-    border-radius: 8px;
-    font-size: 0.9em;
-    color: #8b949e;
-  }
-  @media (max-width: 768px) {
-    .http-preview { grid-template-columns: 1fr; }
+  .http-preview { display: grid; grid-template-columns: 60px 1fr auto; gap: 12px; align-items: center; margin: 16px 0; }
+  .http-preview input { padding: 10px; border: 1px solid #444; background: #1a1a1a; color: #fff; border-radius: 6px; width: 100%; }
+  .http-preview button { padding: 10px 20px; color: #fff; border-radius: 6px; cursor: pointer; border: 1px solid #555; background: #2a2a2a; }
+  .http-preview-status { padding: 10px; background: #161b22; color: #58a6ff; border-radius: 6px; margin-bottom: 10px; font-size: 14px; border: 1px solid #30363d; }
+  
+  /* 預覽容器樣式，模擬一個乾淨的畫布 */
+  #render-target { 
+    background: #fff; 
+    color: #000; 
+    min-height: 500px; 
+    padding: 0; 
+    border-radius: 8px; 
+    border: 1px solid #333; 
+    overflow: auto;
+    position: relative;
   }
 </style>
 
@@ -75,96 +40,109 @@ title: Http Preview
   (function () {
     const input = document.getElementById("previewUrl");
     const btnGo = document.getElementById("previewGo");
-    const btnOpen = document.getElementById("previewOpen");
     const status = document.getElementById("previewStatus");
+    const target = document.getElementById("render-target");
 
-    function showStatus(msg) {
+    function setStatus(msg) {
       status.textContent = msg;
-      status.hidden = false;
+      status.hidden = !msg;
     }
 
-    // 將 Github 連結轉換為 Raw 連結
     function getRawUrl(url) {
       try {
         let u = new URL(url.trim());
         if (u.hostname === 'github.com') {
-          return u.href
-            .replace('github.com', 'raw.githubusercontent.com')
-            .replace('/blob/', '/');
+          return u.href.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
         }
         return u.href;
       } catch (e) { return url; }
     }
 
-    async function startExecution() {
-      let rawInput = input.value.trim();
-      if (!rawInput) return;
-
-      // 補足協定
-      if (!/^https?:\/\//i.test(rawInput)) {
-        rawInput = "https://" + rawInput;
+    function absolutePath(base, relative) {
+      if (!relative || relative.startsWith('http') || relative.startsWith('//') || relative.startsWith('data:')) return relative;
+      const stack = base.split('/');
+      stack.pop(); 
+      const parts = relative.split('/');
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i] === '.') continue;
+        if (parts[i] === '..') stack.pop();
+        else stack.push(parts[i]);
       }
+      return stack.join('/');
+    }
 
-      const targetUrl = getRawUrl(rawInput);
-      showStatus("正在讀取並編譯腳本，請稍候...");
+    async function executePreview() {
+      let url = input.value.trim();
+      if (!url) return;
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+
+      const rawUrl = getRawUrl(url);
+      const baseUrl = rawUrl.substring(0, rawUrl.lastIndexOf('/') + 1);
+      
+      setStatus("正在進行深度渲染 (CSS & JS)...");
+      target.innerHTML = ''; // 清空舊內容
 
       try {
-        const response = await fetch(targetUrl);
-        if (!response.ok) throw new Error("讀取失敗，請確認該 Repo 是公開的。");
-        
-        let htmlContent = await response.text();
+        const res = await fetch(rawUrl);
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
 
-        // 核心邏輯：計算基礎路徑以修復相對資源 (CSS/JS/IMG)
-        const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
-        
-        // 建立一個乾淨的 HTML 結構，強制注入 <base>
-        const finalDoc = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <base href="${baseUrl}">
-            <script>
-              // 修正一些抓取環境下的基礎 API 差異
-              console.log("Environment: Preview Mode Active");
-            <\/script>
-          </head>
-          ${htmlContent}
-          </html>
-        `;
+        // 1. 處理 CSS (手動抓取內容以避開 MIME 檢查)
+        const links = doc.querySelectorAll('link[rel="stylesheet"]');
+        for (let link of links) {
+          const cssUrl = absolutePath(rawUrl, link.getAttribute('href'));
+          try {
+            const cssRes = await fetch(cssUrl);
+            let cssText = await cssRes.text();
+            
+            // 修正 CSS 內部的 url() 路徑 (如背景圖)
+            const cssBase = cssUrl.substring(0, cssUrl.lastIndexOf('/') + 1);
+            cssText = cssText.replace(/url\(['"]?([^'")]*)['"]?\)/g, (match, p1) => {
+              return `url("${absolutePath(cssUrl, p1)}")`;
+            });
 
-        // 更新網址列紀錄，但不刷新頁面 (方便上一頁回來)
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set("url", rawInput);
-        history.pushState({}, "", newUrl);
+            const styleTag = document.createElement('style');
+            styleTag.innerHTML = cssText;
+            target.appendChild(styleTag);
+          } catch (e) { console.warn("CSS 載入失敗:", cssUrl); }
+        }
 
-        // --- 完全執行：重寫當前 Document ---
-        document.open();
-        document.write(finalDoc);
-        document.close();
+        // 2. 修正圖片與資源路徑
+        doc.querySelectorAll('img, source, video').forEach(el => {
+          const attr = el.tagName === 'IMG' ? 'src' : 'src';
+          if (el.hasAttribute(attr)) {
+            el.setAttribute(attr, absolutePath(rawUrl, el.getAttribute(attr)));
+          }
+        });
 
+        // 3. 注入 HTML
+        const contentWrapper = document.createElement('div');
+        contentWrapper.innerHTML = doc.body.innerHTML;
+        target.appendChild(contentWrapper);
+
+        // 4. 處理 JS
+        const scripts = doc.querySelectorAll('script');
+        for (let oldScript of scripts) {
+          const newScript = document.createElement('script');
+          Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+          
+          if (oldScript.src) {
+            newScript.src = absolutePath(rawUrl, oldScript.getAttribute('src'));
+          } else {
+            newScript.innerHTML = oldScript.innerHTML;
+          }
+          document.body.appendChild(newScript);
+        }
+
+        setStatus("渲染完成！");
       } catch (err) {
-        showStatus("發生錯誤: " + err.message);
-        console.error(err);
+        setStatus("錯誤: " + err.message);
       }
     }
 
-    btnGo.addEventListener("click", startExecution);
-    
-    btnOpen.addEventListener("click", () => {
-      const url = input.value.trim();
-      if (url) window.open(url, "_blank");
-    });
-
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") startExecution();
-    });
-
-    // 解析網址參數自動載入
+    btnGo.addEventListener("click", executePreview);
     const params = new URLSearchParams(window.location.search);
-    if (params.get("url")) {
-      input.value = params.get("url");
-      // 注意：基於安全考慮，通常需要使用者手動點擊 Run 以觸發 script 執行
-    }
+    if (params.get("url")) { input.value = params.get("url"); }
   })();
 </script>
