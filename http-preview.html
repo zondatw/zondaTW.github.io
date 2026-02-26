@@ -4,17 +4,15 @@ permalink: /http-preview/
 title: Http Preview
 ---
 
-<div id="ui-layer">
-  <article class="dark">
-    <h2>HTTP Preview</h2>
+<article class="dark">
+  <h2>HTTP Preview</h2>
 
-    <div class="http-preview">
-      <input id="previewUrl" type="url" placeholder="https://github.com/user/repo/blob/main/index.html" spellcheck="false" />
-      <button id="previewGo" type="button">Run Preview</button>
-    </div>
-    <div id="previewStatus" class="http-preview-status" hidden></div>
-  </article>
-</div>
+  <div class="http-preview">
+    <input id="previewUrl" type="url" placeholder="https://github.com/user/repo/blob/main/index.html" spellcheck="false" />
+    <button id="previewGo" type="button">Run Preview</button>
+  </div>
+  <div id="previewStatus" class="http-preview-status" hidden></div>
+</article>
 
 <style>
   .http-preview { display: flex; gap: 10px; margin: 20px 0; }
