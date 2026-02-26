@@ -9,25 +9,79 @@ title: Http Preview
 
   <div class="http-preview">
     <input id="previewUrl" type="url" placeholder="https://github.com/user/repo/blob/main/index.html" spellcheck="false" />
-    <button id="previewGo" type="button">Run Preview</button>
+    <div class="button-group">
+      <button id="previewGo" type="button" class="btn-run">Run Preview</button>
+      <button id="copyUrl" type="button" class="btn-copy">Copy Sharing Link</button>
+    </div>
   </div>
   <div id="previewStatus" class="http-preview-status" hidden></div>
 </article>
 
 <style>
-  .http-preview { display: flex; gap: 10px; margin: 20px 0; }
-  .http-preview input { flex: 1; padding: 12px; border: 1px solid #444; background: #1a1a1a; color: #fff; border-radius: 6px; }
-  .http-preview button { padding: 10px 24px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-  .http-preview-status { padding: 12px; background: #252115; color: #e3b341; border-radius: 6px; border: 1px solid #d29922; }
+  .http-preview { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+  .http-preview input { 
+    flex: 1; padding: 12px; border: 1px solid #444; background: #1a1a1a; 
+    color: #fff; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; 
+  }
+  
+  .button-group { display: flex; gap: 10px; }
+  .button-group button { 
+    flex: 1; padding: 12px; border: none; border-radius: 6px; 
+    cursor: pointer; font-weight: bold; transition: all 0.2s; 
+  }
+  
+  .btn-run { background: #238636; color: white; }
+  .btn-run:hover { background: #2ea043; }
+  
+  .btn-copy { 
+    background: #21262d; color: #c9d1d9; border: 1px solid #30363d !important; 
+  }
+  .btn-copy:hover { background: #30363d; }
+  
+  .http-preview-status { 
+    padding: 12px; background: #252115; color: #e3b341; 
+    border-radius: 6px; border: 1px solid #d29922; font-size: 14px; 
+  }
+  
+  @media (max-width: 480px) {
+    .button-group { flex-direction: column; }
+  }
 </style>
 
 <script>
   (function () {
     const input = document.getElementById("previewUrl");
     const btnGo = document.getElementById("previewGo");
+    const btnCopy = document.getElementById("copyUrl");
     const status = document.getElementById("previewStatus");
 
-    // using jsDeliver to bypassing ORB
+    function getSharingUrl() {
+      const val = input.value.trim();
+      if (!val) return null;
+      const base = window.location.origin + window.location.pathname;
+      return `${base}?url=${encodeURIComponent(val)}`;
+    }
+
+    btnCopy.addEventListener("click", () => {
+      const shareUrl = getSharingUrl();
+      if (!shareUrl) {
+        alert("請先輸入網址");
+        return;
+      }
+      
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        const originalText = btnCopy.textContent;
+        btnCopy.textContent = "✓ Copied!";
+        setTimeout(() => {
+          btnCopy.textContent = originalText;
+        }, 2000);
+      }).catch(err => {
+        console.error('無法複製', err);
+        alert("複製失敗，請手動複製網址列");
+      });
+    });
+
+
     function getCdnUrl(url) {
       const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)/i);
       if (match) {
@@ -50,12 +104,13 @@ title: Http Preview
         if (!response.ok) throw new Error("Fetch failed");
         let content = await response.text();
 
-        // 1. replace path to jsDelivr's path
         const rewritePath = (tag, attr) => {
           const reg = new RegExp('<' + tag + '([^>]+)' + attr + '=["\'](?!(?:https?|//|data:))([^"\']+)["\']', 'gi');
           content = content.replace(reg, (m, before, path) => {
-            const absPath = new URL(path, baseUrl).href;
-            return '<' + tag + before + attr + '="' + absPath + '"';
+            try {
+              const absPath = new URL(path, baseUrl).href;
+              return '<' + tag + before + attr + '="' + absPath + '"';
+            } catch(e) { return m; }
           });
         };
 
@@ -63,10 +118,15 @@ title: Http Preview
         rewritePath('link', 'href');
         rewritePath('img', 'src');
 
-        // 2. inject Base
-        content = content.replace(/<head([^>]*)>/i, '<head$1><base href="' + baseUrl + '">');
+        const headInjection = `
+          <head>
+            <base href="${baseUrl}">
+            <style>
+              html, body { margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; }
+            </style>
+        `;
+        content = content.replace(/<head([^>]*)>/i, headInjection);
 
-        // 3. rewrite
         document.open();
         document.write(content);
         document.close();
@@ -80,8 +140,8 @@ title: Http Preview
     btnGo.addEventListener("click", () => {
       const url = input.value.trim();
       if (url) {
-        const newUrl = window.location.origin + window.location.pathname + '?url=' + encodeURIComponent(url);
-        window.history.pushState({ path: newUrl }, '', newUrl);
+        const shareUrl = getSharingUrl();
+        window.history.pushState({ path: shareUrl }, '', shareUrl);
         preview(url);
       }
     });
