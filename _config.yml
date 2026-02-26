@@ -13,7 +13,7 @@ paginate: 12                  # number of articles per page
 
 navigation:                  # (optional) site navigation in the header
   - categories.html
-  - http-preview.html
+  - html-preview.html
 
 # Build settings
 markdown: kramdown

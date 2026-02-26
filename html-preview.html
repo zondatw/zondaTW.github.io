@@ -1,25 +1,25 @@
 ---
 layout: default
-permalink: /http-preview/
-title: Http Preview
+permalink: /html-preview/
+title: Html Preview
 ---
 
 <article class="dark">
-  <h2>HTTP Preview</h2>
+  <h2>HTML Preview</h2>
 
-  <div class="http-preview">
+  <div class="html-preview">
     <input id="previewUrl" type="url" placeholder="https://github.com/user/repo/blob/main/index.html" spellcheck="false" />
     <div class="button-group">
       <button id="previewGo" type="button" class="btn-run">Run Preview</button>
       <button id="copyUrl" type="button" class="btn-copy">Copy Sharing Link</button>
     </div>
   </div>
-  <div id="previewStatus" class="http-preview-status" hidden></div>
+  <div id="previewStatus" class="html-preview-status" hidden></div>
 </article>
 
 <style>
-  .http-preview { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
-  .http-preview input { 
+  .html-preview { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+  .html-preview input { 
     flex: 1; padding: 12px; border: 1px solid #444; background: #1a1a1a; 
     color: #fff; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; 
   }
@@ -38,7 +38,7 @@ title: Http Preview
   }
   .btn-copy:hover { background: #30363d; }
   
-  .http-preview-status { 
+  .html-preview-status { 
     padding: 12px; background: #252115; color: #e3b341; 
     border-radius: 6px; border: 1px solid #d29922; font-size: 14px; 
   }
