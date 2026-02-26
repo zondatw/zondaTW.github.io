@@ -4,36 +4,23 @@ permalink: /http-preview/
 title: Http Preview
 ---
 
-<article id="preview-interface" class="dark">
-  <h2>HTTP Preview</h2>
+<div id="ui-layer">
+  <article class="dark">
+    <h2>HTTP Preview</h2>
 
-  <div class="http-preview">
-    <label for="previewUrl">URL</label>
-    <input id="previewUrl" type="url" placeholder="https://github.com/user/repo/blob/main/index.html" autocomplete="off" />
-    <button id="previewGo" type="button" style="background: #238636; border-color: #2ea043;">Run Web</button>
-  </div>
-  <div id="previewStatus" class="http-preview-status" hidden></div>
-  <hr>
-  <div id="render-target"></div>
-</article>
+    <div class="http-preview">
+      <input id="previewUrl" type="url" placeholder="https://github.com/user/repo/blob/main/index.html" spellcheck="false" />
+      <button id="previewGo" type="button">Run Preview</button>
+    </div>
+    <div id="previewStatus" class="http-preview-status" hidden></div>
+  </article>
+</div>
 
 <style>
-  .http-preview { display: grid; grid-template-columns: 60px 1fr auto; gap: 12px; align-items: center; margin: 16px 0; }
-  .http-preview input { padding: 10px; border: 1px solid #444; background: #1a1a1a; color: #fff; border-radius: 6px; width: 100%; }
-  .http-preview button { padding: 10px 20px; color: #fff; border-radius: 6px; cursor: pointer; border: 1px solid #555; background: #2a2a2a; }
-  .http-preview-status { padding: 10px; background: #161b22; color: #58a6ff; border-radius: 6px; margin-bottom: 10px; font-size: 14px; border: 1px solid #30363d; }
-  
-  /* 預覽容器樣式，模擬一個乾淨的畫布 */
-  #render-target { 
-    background: #fff; 
-    color: #000; 
-    min-height: 500px; 
-    padding: 0; 
-    border-radius: 8px; 
-    border: 1px solid #333; 
-    overflow: auto;
-    position: relative;
-  }
+  .http-preview { display: flex; gap: 10px; margin: 20px 0; }
+  .http-preview input { flex: 1; padding: 12px; border: 1px solid #444; background: #1a1a1a; color: #fff; border-radius: 6px; }
+  .http-preview button { padding: 10px 24px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+  .http-preview-status { padding: 12px; background: #252115; color: #e3b341; border-radius: 6px; border: 1px solid #d29922; }
 </style>
 
 <script>
@@ -41,108 +28,73 @@ title: Http Preview
     const input = document.getElementById("previewUrl");
     const btnGo = document.getElementById("previewGo");
     const status = document.getElementById("previewStatus");
-    const target = document.getElementById("render-target");
 
-    function setStatus(msg) {
-      status.textContent = msg;
-      status.hidden = !msg;
-    }
-
-    function getRawUrl(url) {
-      try {
-        let u = new URL(url.trim());
-        if (u.hostname === 'github.com') {
-          return u.href.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
-        }
-        return u.href;
-      } catch (e) { return url; }
-    }
-
-    function absolutePath(base, relative) {
-      if (!relative || relative.startsWith('http') || relative.startsWith('//') || relative.startsWith('data:')) return relative;
-      const stack = base.split('/');
-      stack.pop(); 
-      const parts = relative.split('/');
-      for (let i = 0; i < parts.length; i++) {
-        if (parts[i] === '.') continue;
-        if (parts[i] === '..') stack.pop();
-        else stack.push(parts[i]);
+    // using jsDeliver to bypassing ORB
+    function getCdnUrl(url) {
+      const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)/i);
+      if (match) {
+        const [_, user, repo, branch, path] = match;
+        return `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${path}`;
       }
-      return stack.join('/');
+      return url;
     }
 
-    async function executePreview() {
-      let url = input.value.trim();
+    async function preview(url) {
       if (!url) return;
-      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+      const cdnUrl = getCdnUrl(url);
+      const baseUrl = cdnUrl.substring(0, cdnUrl.lastIndexOf('/') + 1);
 
-      const rawUrl = getRawUrl(url);
-      const baseUrl = rawUrl.substring(0, rawUrl.lastIndexOf('/') + 1);
-      
-      setStatus("正在進行深度渲染 (CSS & JS)...");
-      target.innerHTML = ''; // 清空舊內容
+      status.textContent = "Bypassing ORB via jsDelivr...";
+      status.hidden = false;
 
       try {
-        const res = await fetch(rawUrl);
-        const html = await res.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        const response = await fetch(cdnUrl);
+        if (!response.ok) throw new Error("Fetch failed");
+        let content = await response.text();
 
-        // 1. 處理 CSS (手動抓取內容以避開 MIME 檢查)
-        const links = doc.querySelectorAll('link[rel="stylesheet"]');
-        for (let link of links) {
-          const cssUrl = absolutePath(rawUrl, link.getAttribute('href'));
-          try {
-            const cssRes = await fetch(cssUrl);
-            let cssText = await cssRes.text();
-            
-            // 修正 CSS 內部的 url() 路徑 (如背景圖)
-            const cssBase = cssUrl.substring(0, cssUrl.lastIndexOf('/') + 1);
-            cssText = cssText.replace(/url\(['"]?([^'")]*)['"]?\)/g, (match, p1) => {
-              return `url("${absolutePath(cssUrl, p1)}")`;
-            });
+        // 1. replace path to jsDelivr's path
+        const rewritePath = (tag, attr) => {
+          const reg = new RegExp('<' + tag + '([^>]+)' + attr + '=["\'](?!(?:https?|//|data:))([^"\']+)["\']', 'gi');
+          content = content.replace(reg, (m, before, path) => {
+            const absPath = new URL(path, baseUrl).href;
+            return '<' + tag + before + attr + '="' + absPath + '"';
+          });
+        };
 
-            const styleTag = document.createElement('style');
-            styleTag.innerHTML = cssText;
-            target.appendChild(styleTag);
-          } catch (e) { console.warn("CSS 載入失敗:", cssUrl); }
-        }
+        rewritePath('script', 'src');
+        rewritePath('link', 'href');
+        rewritePath('img', 'src');
 
-        // 2. 修正圖片與資源路徑
-        doc.querySelectorAll('img, source, video').forEach(el => {
-          const attr = el.tagName === 'IMG' ? 'src' : 'src';
-          if (el.hasAttribute(attr)) {
-            el.setAttribute(attr, absolutePath(rawUrl, el.getAttribute(attr)));
-          }
-        });
+        // 2. inject Base
+        content = content.replace(/<head([^>]*)>/i, '<head$1><base href="' + baseUrl + '">');
 
-        // 3. 注入 HTML
-        const contentWrapper = document.createElement('div');
-        contentWrapper.innerHTML = doc.body.innerHTML;
-        target.appendChild(contentWrapper);
+        // 3. rewrite
+        document.open();
+        document.write(content);
+        document.close();
 
-        // 4. 處理 JS
-        const scripts = doc.querySelectorAll('script');
-        for (let oldScript of scripts) {
-          const newScript = document.createElement('script');
-          Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-          
-          if (oldScript.src) {
-            newScript.src = absolutePath(rawUrl, oldScript.getAttribute('src'));
-          } else {
-            newScript.innerHTML = oldScript.innerHTML;
-          }
-          document.body.appendChild(newScript);
-        }
-
-        setStatus("渲染完成！");
-      } catch (err) {
-        setStatus("錯誤: " + err.message);
+      } catch (e) {
+        status.textContent = "Error: " + e.message;
+        console.error(e);
       }
     }
 
-    btnGo.addEventListener("click", executePreview);
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("url")) { input.value = params.get("url"); }
+    btnGo.addEventListener("click", () => {
+      const url = input.value.trim();
+      if (url) {
+        const newUrl = window.location.origin + window.location.pathname + '?url=' + encodeURIComponent(url);
+        window.history.pushState({ path: newUrl }, '', newUrl);
+        preview(url);
+      }
+    });
+
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlParam = params.get("url");
+      if (urlParam) {
+        input.value = urlParam;
+        preview(urlParam);
+      }
+    });
   })();
 </script>
